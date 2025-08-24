@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "82263482142",
+    "project_id": "telli-v1",
+    "storage_bucket": "telli-v1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:82263482142:android:660823abc4ca52e56e330f",
+        "android_client_info": {
+          "package_name": "com.telli"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqQbRWNqjGT-SCGklrVwX-Ury5aEA2YmA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
