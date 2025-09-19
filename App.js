@@ -1,37 +1,61 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import * as Keychain from "react-native-keychain"
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Ion from "react-native-vector-icons/Ionicons"
 import Mci from 'react-native-vector-icons/MaterialCommunityIcons'
 import PushNotification from 'react-native-push-notification'
 import SplashScreen from 'react-native-splash-screen'
-import { ActivityIndicator, AppState, Button, I18nManager, Linking, PermissionsAndroid, Pressable, StatusBar, View } from "react-native"
+import { ActivityIndicator, AppState, Button, I18nManager, Linking, PermissionsAndroid, Pressable, StatusBar, Text, View } from "react-native"
 import { getApp } from '@react-native-firebase/app'
 import { getMessaging, onMessage, requestPermission } from '@react-native-firebase/messaging'
 import { Modal, PaperProvider, Portal } from "react-native-paper"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { NavigationContainer } from '@react-navigation/native'
+import { SafeAreaProvider } from "react-native-safe-area-context"
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { useDomain, useModal, usePending, useSnackBar, useToken, useUrl, useUser } from "./store/useStore"
+import { useChatBoxSectorId, useDomain, useModal, usePending, useSnackBar, useToken, useUser } from "./store/useStore"
+import { refreshAccessToken, sendPendingIssue, sendPendingVotes, initSocket, url } from "./utils/https"
+import { isSameDay } from "./utils/isSameDay"
+import { createChat } from "./utils/createChat"
 import getContacts from "./utils/getContacts"
+import showSnackBar from "./utils/snackBar"
 import linking from "./utils/linking"
-import SignUp from "./src/screens/auth/SignUp"
-import Login from "./src/screens/auth/Login"
-import ProfileScreen from "./src/screens/main/profile/ProfileScreen"
-import Settings from "./src/screens/main/profile/Settings"
-import ResizableComponent from "./src/screens/main/home/ResizableComponent"
-import SideComponent from "./src/screens/main/home/SideComponent"
-import AddDomain from "./src/screens/main/home/AddDomain"
-import AddSector from "./src/screens/main/home/AddSector"
-import AddContacts from "./src/screens/main/home/AddContacts"
-import showSnackBar from "./utils/SnackBar"
 import SnackBarView from "./src/components/SnackBarView"
-import { refreshAccessToken, sendPendingIssue, initSocket, url } from "./utils/https"
+
+import Login from "./src/screens/auth/Login"
+import SignUp from "./src/screens/auth/SignUp"
+import AddContacts from "./src/screens/main/home/stackScreens/AddContacts"
+import AddDomain from "./src/screens/main/home/stackScreens/AddDomain"
+import AddSector from "./src/screens/main/home/stackScreens/AddSector"
+import SectorDetail from "./src/screens/main/home/stackScreens/SectorDetail"
+import SectorView from "./src/screens/main/home/SectorView"
+import ResizableComponent from "./src/screens/main/home/stackScreens/ResizableComponent"
+import SideComponent from "./src/screens/main/home/stackScreens/SideComponent"
+import Live from "./src/screens/main/LiveScreen"
+import ProfileScreen from "./src/screens/main/ProfileScreen"
+import HomeScreen from "./src/screens/main/HomeScreen"
 
 I18nManager.allowRTL(true)
 const Stack = createNativeStackNavigator()
 const Tab = createBottomTabNavigator()
+
+const userContacts = {
+	_id: "ccccccc",
+	domain: "Contacts",
+	pinned: true,
+	settings: {},
+	sectors: [
+		{
+			_id: "ai",
+			domain_id: "ccccccc",
+			title: "AI",
+			status: "private",
+			time: Date.now(),
+			data: []
+		}
+	]
+}
 
 const requestPermissions = async () => {
 	if (Platform.OS === 'android') {
@@ -61,15 +85,12 @@ const getDomain = async () => {
 		const c = await AsyncStorage.getItem("currDomain")
 		const p = await AsyncStorage.getItem("pinned")
 		const pinned = JSON.parse(p)
-
 		let accessToken = useToken.getState().accessToken
-
 		const httpCall = await fetch(`${url}/domain`, {
 			headers: {
 				Authorization: "Bearer " + accessToken,
 			}
 		})
-
 		const res = await httpCall.json()
 		if (res.exp) {
 			let accessToken_ = await refreshAccessToken()
@@ -82,6 +103,7 @@ const getDomain = async () => {
 					i.pinned = true
 				}
 			})
+			const existingUserContacts = domains.find(d => d._id === "ccccccc");
 			const updatedDomains = await res.domain.map(newDomain => {
 				const existingDomain = domains.find(d => d._id === newDomain._id);
 				if (!existingDomain) return newDomain
@@ -92,22 +114,21 @@ const getDomain = async () => {
 
 				return {
 					...existingDomain,
-					sectors: mergedSectors
+					sectors: mergedSectors,
+					logo: newDomain.logo,
+					Settings: newDomain.Settings,
+					link: newDomain.link
 				};
 			});
-			setDomains(updatedDomains);
-
+			setDomains([...updatedDomains, existingUserContacts ? existingUserContacts : userContacts]);
 			const foundDomain = res.domain.find(i => i._id === c)
 			if (foundDomain) {
 				setCurrDomainId(foundDomain._id)
-			} else {
-				setCurrDomainId(res.domain[0]._id)
 			}
 			await AsyncStorage.setItem("cacheDomain", JSON.stringify(updatedDomains))
 		}
 	} catch (err) {
-		console.log((new Date()).toLocaleTimeString(), err)
-		showSnackBar("an error occured")
+		console.log((new Date()).toLocaleTimeString())
 	}
 }
 
@@ -115,7 +136,7 @@ const getIssuesVoted = async () => {
 	const { setUser } = useUser.getState()
 	try {
 		let accessToken = useToken.getState().accessToken
-		const httpCall = await fetch(`${url}/api/user/issues-voted`, {
+		const httpCall = await fetch(`${url}/user/issues-voted`, {
 			headers: {
 				Authorization: "Bearer " + accessToken,
 			}
@@ -129,7 +150,7 @@ const getIssuesVoted = async () => {
 		} else if (res.success === true) {
 			setUser(prev => ({
 				...prev,
-				issues_voted: res.issues_voted
+				issues_voted: res.data
 			}))
 		}
 	} catch (err) {
@@ -152,29 +173,30 @@ const sync = async () => {
 	}
 }
 
-function Main({ navigation }) {
-	const [dropVisible, setDropVisible] = useState(false)
-	return (
-		<Pressable style={{ flex: 1 }} onPress={() => { setDropVisible(false) }}>
-			<SideComponent navigation={navigation} dropVisible={dropVisible} setDropVisible={setDropVisible} />
-			<ResizableComponent navigation={navigation} />
-		</Pressable>
-	)
+const addSectorDomain = async (sector) => {
+	const setDomains = useDomain.getState().setDomains
+	const httpCall = await fetch(`${url}/domain/${sector._id}`, {
+		headers: {
+			Authorization: "Bearer " + accessToken,
+		}
+	})
+	const res = await httpCall.json()
+	if (res.success === true) {
+		if (res.data.length >= 1) {
+			setDomains(prev => [...res.data, ...prev])
+			showSnackBar(`You joined ${sector.title}`)
+		} else {
+			showSnackBar("can't join this sector")
+		}
+	}
 }
 
-function HomeScreen() {
-	return (
-		<>
-			{/* <Button title={"kk".toString()} onPress={getDomain} style={{ marginTop: 64 }} /> */}
-			<Stack.Navigator screenOptions={{ headerShown: false, animation: "fade_from_bottom" }}>
-				<Stack.Screen name="main" component={Main} />
-				<Stack.Screen name="addDomain" component={AddDomain} />
-				<Stack.Screen name="addSector" component={AddSector} />
-				<Stack.Screen name="addContacts" component={AddContacts} />
-			</Stack.Navigator>
-		</>
-	)
+function midnightTimestamp() {
+	const now = new Date();
+	return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
 }
+const ts = midnightTimestamp()
+
 
 export default function App() {
 	const messaging = getMessaging(getApp())
@@ -182,81 +204,18 @@ export default function App() {
 	const [initialRoute, setInitialRoute] = useState(false)
 	const { accessToken } = useToken()
 	const { modal } = useModal()
-	const { setCurrDomainId, setDomains, setFetchedSectorIds } = useDomain()
-
-	const getToken = async () => {
-		const refreshToken = await Keychain.getGenericPassword({ service: "refreshToken" })
-		if (refreshToken) {
-			setInitialRoute(true)
-		}
-		SplashScreen.hide()
-	}
+	const { domains, setDomains } = useDomain()
 
 	useEffect(() => {
-		async function connect() {
-			if (accessToken) {
-				console.log("access token available")
-				const socket = await initSocket(accessToken);
-				socket.connect()
-				socket.on("connect", () => {
-					console.log("socket connected")
-					sync()
-					getIssuesVoted()
-					getDomain()
-					socket.emit("joinSectors")
-				})
-				socket.on("note", ({ data, domainId }) => {
-					setDomains(prev =>
-						prev.map(d => {
-							if (d._id !== domainId) return d
-							return {
-								...d,
-								sectors: d.sectors.map(s => {
-									if (s._id !== data.sector_id) return s;
-									return {
-										...s,
-										time: Date.now(),
-										data: [data, ...(s.data || [])]
-									};
-								}),
-							};
-						})
-					);
-				})
-				socket.on("connect_error", (err) => {
-					if (err.message === "invalid") {
-						console.log("Token expired or missing");
-						(async () => {
-							await refreshAccessToken();
-						})();
-					}
-					else {
-						console.log(err);
-						console.log("socket error");
-					}
-				});
-				socket.on("disconnect", () => {
-					console.log("ds")
-					setFetchedSectorIds([])
-				})
-			} else {
-				console.log("no access token on start")
-			}
-		}
-		connect();
-		return () => {
-			console.log("unmounted")
-		}
-	}, [accessToken])
-
-	useEffect(() => {
-		getToken();
+		console.log("mounted");
 		(async () => {
-			const req = await requestPermission(messaging)
-			// console.log(req, "req")
-			// const token = await getToken(messaging)
-			// console.log('FCM Token:', token)
-		})()
+			await requestPermission(messaging)
+			const refreshToken = await Keychain.getGenericPassword({ service: "refreshToken" })
+			if (refreshToken) {
+				setInitialRoute(true)
+			}
+			SplashScreen.hide()
+		})();
 
 		PushNotification.createChannel({
 			channelId: 'tells',
@@ -274,7 +233,9 @@ export default function App() {
 			vibrate: true,
 		})
 
-		requestPermissions()
+		setTimeout(() => {
+			requestPermissions()
+		}, 500)
 		onMessage(messaging, async remoteMessage => {
 			if (remoteMessage.data.domain) {
 				const newDomain = JSON.parse(remoteMessage.data.domain)  /////check backend
@@ -285,38 +246,23 @@ export default function App() {
 
 	useEffect(() => {
 		(async () => {
-			console.log("getting cached domain")
-			const c = await AsyncStorage.getItem("currDomain")
-			let cacheDomain = await AsyncStorage.getItem("cacheDomain")
-			let domains = useDomain.getState().domains
-			if (cacheDomain && domains.length === 0) {
-				cacheDomain = JSON.parse(cacheDomain)
-				setDomains(cacheDomain)
-				const foundDomain = cacheDomain.find(i => i._id === c)
-				if (foundDomain) {
-					setCurrDomainId(foundDomain._id)
-				}
+			const granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_CONTACTS)
+			if (granted) {
+				getContacts()
 			}
-		})()
+		})();
+	}, [])
 
+	useEffect(() => {
 		const subscription = AppState.addEventListener('change', async nextAppState => {
-			let domains = useDomain.getState().domains
 			if (appState.current.match(/active/) && nextAppState.match(/inactive|background/) && domains.length >= 1) {
 				console.log("saving cached domain")
+				let domains = useDomain.getState().domains
 				await AsyncStorage.setItem("cacheDomain", JSON.stringify(domains))
 			}
 			appState.current = nextAppState
 		})
 		return () => subscription.remove()
-	}, [])
-
-	useEffect(() => {
-		(async () => {
-			const granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_CONTACTS)
-			if (granted) {
-				getContacts()
-			}
-		})()
 	}, [])
 
 	useEffect(() => {
@@ -331,93 +277,91 @@ export default function App() {
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
-			<PaperProvider>
-				<Portal>
-					<Modal visible={modal} transparent={true} >
-						<View style={{ flex: 1, backgroundColor: "#0004", justifyContent: "center" }}>
-							<ActivityIndicator size="large" color="#66b" style={{ alignSelf: "center" }} />
-							<ActivityIndicator size="small" color="#88b" style={{ alignSelf: "center" }} />
-						</View>
-					</Modal>
-				</Portal>
-				<NavigationContainer linking={linking}>
-					<StatusBar animated={true} backgroundColor="#3399" />
-					{/* <Button title={initialRoute.toString()} onPress={ttt} style={{ marginTop: 64 }} /> */}
-					{
-						accessToken ?
-							<Tab.Navigator
-								screenOptions={({ route }) => ({
-									headerShown: false,
-									tabBarHideOnKeyboard: true,
-									tabBarShowLabel: false,
-									tabBarIcon: ({ focused }) => {
-										let Icon
-										let colorx
-										let iconx
-										let sizex
-										colorx = focused ? "#117" : "#fffc"
-										switch (route.name) {
-											case "Home":
-												Icon = Mci
-												iconx = "home"
-												sizex = 34
-												break
-											case "Profile":
-												Icon = Ion
-												iconx = "person-sharp"
-												sizex = 28
-												break
-										}
-										return (
-											<Icon name={iconx} color={colorx} size={sizex} style={{
-												width: 100,
-												height: 34,
-												borderRadius: 50,
-												textAlign: "center",
-												backgroundColor: focused ? "#44b6" : "#ddd",
-												// transform: focused ? [{ scale: 1.2 }] : [{ scale: 1 }],
-											}} />
-										)
-									},
-									tabBarIconStyle: { marginTop: 6 },
-									tabBarStyle: {
-										// position: 'absolute',
-										elevation: 0,
-										borderTopWidth: 0,
-										zIndex: 1
-									},
-									tabBarBackground: () => ( // this removes the grey opacity when I click tab icon
-										<View
-											style={{
-												backgroundColor: "#fdfdfd",
-												height: '100%',
-												width: '100%',
-												borderWidth: 0
-											}}
-										/>
-									),
-								})}
-							>
-								{/* <Tab.Screen name="Profile" component={Settings} /> */}
-								<Tab.Screen name="Home" component={HomeScreen} />
-								<Tab.Screen name="Profile" component={ProfileScreen} />
-							</Tab.Navigator>
-							:
-							<Stack.Navigator
-								initialRouteName={initialRoute ? "Login" : "SignUp"}
-								screenOptions={{
-									headerShown: false,
-									animation:"slide_from_right",
-									presentation: "modal"
-								}}
-							>
-								<Stack.Screen name="Login" component={Login}/>
-								<Stack.Screen name="SignUp" component={SignUp} />
-							</Stack.Navigator>
-					}
-					<SnackBarView />
-				</NavigationContainer>
-			</PaperProvider>
+			<SafeAreaProvider>
+				<PaperProvider>
+					<NavigationContainer linking={linking}>
+						<StatusBar animated={true} backgroundColor="#3399" />
+						{
+							accessToken ?
+								<Tab.Navigator
+									screenOptions={({ route }) => ({
+										headerShown: false,
+										tabBarHideOnKeyboard: true,
+										tabBarShowLabel: false,
+										tabBarIcon: ({ focused }) => {
+											let Icon
+											let colorx
+											let iconx
+											let sizex
+											colorx = focused ? "#117" : "#ccc"
+											switch (route.name) {
+												case "home":
+													Icon = Mci
+													iconx = "chat"
+													sizex = 32
+													break
+												case "live":
+													Icon = Mci
+													iconx = "text"
+													sizex = 26
+													break
+												case "ho":
+													Icon = Ion
+													iconx = "person-sharp"
+													sizex = 26
+													break
+												case "profile":
+													Icon = Mci
+													iconx = "pen"
+													sizex = 26
+													break
+											}
+											return (
+												<Icon name={iconx} color={colorx} size={sizex} style={{
+													width: 80,
+													height: 30,
+													borderRadius: 30,
+													textAlign: "center",
+													backgroundColor: focused ? "#44b1" : "#ddd1",
+												}} />
+											)
+										},
+										tabBarIconStyle: { marginTop: 6 },
+										tabBarStyle: {
+											elevation: 0,
+											borderTopWidth: 0,
+											zIndex: 1
+										},
+										tabBarBackground: () => ( // this removes the grey opacity when I click tab icon
+											<View
+												style={{
+													backgroundColor: "#fdfdfd",
+													height: '100%',
+													width: '100%',
+													borderWidth: 0
+												}}
+											/>
+										),
+									})}
+								>
+									<Tab.Screen name="live" component={Live} />
+									<Tab.Screen name="home" component={HomeScreen} />
+									<Tab.Screen name="ho" component={ProfileScreen} />
+									<Tab.Screen name="profile" component={ProfileScreen} />
+								</Tab.Navigator>
+								:
+								<Stack.Navigator
+									initialRouteName={initialRoute ? "login" : "signUp"}
+									screenOptions={{ headerShown: false, animation: "slide_from_right" }}
+								>
+									<Stack.Screen name="login" component={Login} />
+									<Stack.Screen name="signUp" component={SignUp} />
+								</Stack.Navigator>
+						}
+						<SnackBarView />
+					</NavigationContainer>
+				</PaperProvider>
+			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	)
 }

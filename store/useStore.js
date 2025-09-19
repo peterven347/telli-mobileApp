@@ -34,7 +34,7 @@ const keychainStorage = {
 export const useDomain = create((set) => (
 	{
 		domains: [],
-		currDomainId: "",
+		currDomainId: "ccccccc",
 		fetchedSectorIds: [],
 		setDomains: (updater) =>
 			set((state) => ({
@@ -47,6 +47,11 @@ export const useDomain = create((set) => (
 			}))
 	}
 ))
+
+export const useChatBoxSectorId = create((set) => ({
+	chatBoxSectorId: "",
+	setChatBoxSectorId: (state) => set({ chatBoxSectorId: state })
+}))
 
 export const useDomainImg = create((set) => ({
 	imageUri: {},
@@ -80,6 +85,19 @@ export const useUser = create(
 		}
 	)
 )
+
+// export const useLastMessageTime = create(
+// 	persist(
+// 		(set) => ({
+// 			lastMessageTime: Date.now(),
+// 			setLastMessageTime: (state) => set({ lastMessageTime: state }),
+// 		}),
+// 		{
+// 			name: 'lastMessageTime',
+// 			storage: createJSONStorage(() => AsyncStorage),
+// 		}
+// 	)
+// );
 
 export const useModal = create((set) => ({
 	modal: false,
@@ -120,6 +138,11 @@ export const usePending = create(
 		})),
 		markSent: (id) => set((state) => ({
 			pending: state.pending.filter(i => i.id !== id)
+		})),
+
+		pendingVotes: [],
+		setPendingVotes: (i) => set((state) => ({
+			pendingVotes: Array.isArray(i) ? i : [...state.pendingVotes, i]
 		}))
 	}),
 		{

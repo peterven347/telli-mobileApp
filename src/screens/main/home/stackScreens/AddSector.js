@@ -1,12 +1,10 @@
 import React, { useState } from "react"
 import { View } from "react-native"
-import { useDelegateContact, useDomain, useToken, useUser } from "../../../../store/useStore"
-import { url } from "../../../../utils/https"
-import { refreshAccessToken } from '../../../../utils/refreshAccessToken'
-import SectorData from '../../../components/SectorData';
-import showSnackBar from "../../../../utils/SnackBar";
 import { RadioButton } from "react-native-paper"
-
+import { useDelegateContact, useDomain, useToken, useUser } from "../../../../../store/useStore"
+import { refreshAccessToken, url } from "../../../../../utils/https"
+import showSnackBar from "../../../../../utils/snackBar";
+import SectorData from '../../../../components/SectorData';
 
 const emailRegex = /^(?=.{1,256}$)(?=.{1,64}@.{1,255}$)(?=[^@]+@[^@]+\.[a-zA-Z]{2,63}$)^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
@@ -37,6 +35,7 @@ export default function AddSector({ navigation, route }) {
         if (res.exp) {
             console.log("exp token")
             let accessToken_ = await refreshAccessToken()
+            console.log("refreshed")
             if (accessToken_) {
                 addSector()
             } else {
@@ -45,12 +44,13 @@ export default function AddSector({ navigation, route }) {
         } else if (res.success === false) {
             showSnackBar(res.message)
         } else if (res.success === true) {
+            showSnackBar("success")
             setDomains(prev =>
                 prev.map(d => {
-                    if (d._id !== res.data.domainId) return d
+                    if (d._id !== res.data.domain_id) return d
                     return {
                         ...d,
-                        sectors: [...d.sectors, res.data]
+                        sectors: [...d.sectors, {...res.data, data:[], time: Date.now()}]
                     }
                 })
             )
@@ -81,7 +81,8 @@ export default function AddSector({ navigation, route }) {
                 />
             </View>
             <SectorData
-                private_={route.params.status === "private" || false}
+                private_={checked === "private"}
+                // private_={route.params.status === "private" || false}
                 comp={route.params.comp ?? true}
                 sectorName={route.params.sectorName || sectorName}
                 setSectorName={setSectorName}

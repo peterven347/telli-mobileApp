@@ -43,6 +43,7 @@ export default function Login({ navigation }) {
         setBtnActive(false)
         try {
             // const fcmToken = await getToken(messaging)
+            // console.log(fcmToken)
             const val = await fetch(`${url}/login`, {
                 method: "POST",
                 headers: {
@@ -62,10 +63,10 @@ export default function Login({ navigation }) {
                 await setAccessToken(res.accessToken)
                 async function connectSocket() {
                     const socket = await initSocket(res.accessToken);
-                    if (!socket.connected) {
-                        console.log("sc not connected on login")
-                        socket.connect()
-                    }
+                    // if (!socket.connected) {
+                    console.log("sc not connected on login")
+                    socket.connect()
+                    // }
                 }
                 connectSocket()
                 setUser(res.user)
@@ -82,16 +83,18 @@ export default function Login({ navigation }) {
     return (
         <View style={{ flex: 1, paddingTop: 50 }}>
             <TextInput
+                editable={btnActive}
                 mode="outlined"
                 inputMode="email"
                 label="e-mail"
                 textContentType="emailAddress"
                 value={email}
                 onChangeText={setMail}
-                textColor="#222"
+                textColor= {btnActive ? "#222" : "#aaa"}
                 style={styles.textInput}
             />
             <TextInput
+                editable={btnActive}
                 mode="outlined"
                 keyboardType="ascii-capable"
                 label="password"
@@ -103,7 +106,7 @@ export default function Login({ navigation }) {
                 autoCorrect={false}
                 value={password}
                 onChangeText={setPassword}
-                textColor="#222"
+                textColor= {btnActive ? "#222" : "#aaa"}
                 right={<TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} color={passwordVisible ? "#888" : "#444"} size={20} onPress={() => setPasswordVisible(!passwordVisible)} />}
                 style={styles.textInput}
             />

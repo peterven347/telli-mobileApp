@@ -1,16 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import Mci from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ion from 'react-native-vector-icons/Ionicons';
 import { BackHandler, Image, Keyboard, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RadioButton, TextInput } from 'react-native-paper';
 import { Easing } from 'react-native-reanimated';
-import { useDelegateContact, useDomain, useDomainImg, useToken, useUser } from "../../../../store/useStore";
-import { refreshAccessToken } from "../../../../utils/refreshAccessToken";
-import { url } from '../../../../utils/https';
-import Mci from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ion from 'react-native-vector-icons/Ionicons';
-import BottomSheetForImg from './BottomSheetForImg';
-import SectorData from '../../../components/SectorData';
-import showSnackBar from '../../../../utils/SnackBar';
+import { useDelegateContact, useDomain, useDomainImg, useToken, useUser } from "../../../../../store/useStore";
+import { refreshAccessToken, url } from "../../../../../utils/https"
+import showSnackBar from '../../../../../utils/snackBar';
+import BottomSheetForImg from '../BottomSheetForImg';
+import SectorData from '../../../../components/SectorData';
 
 const emailRegex = /^(?=.{1,256}$)(?=.{1,64}@.{1,255}$)(?=[^@]+@[^@]+\.[a-zA-Z]{2,63}$)^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
@@ -80,11 +79,12 @@ export default function AddDomain({ navigation }) {
         } else if (res.success === false) {
             showSnackBar(res.message)
         } else if (res.success === true) {
-            setDomains(prev => [...prev, res.domain])
-            setCurrDomainId(res.domain._id)
+            setDomains(prev => [res.data, ...prev])
+            setCurrDomainId(res.data._id)
             setDelegates([{ id: 1, email: "", res: "" }])
             setSectorName("")
             setDomainName("")
+            setImageUri("")
             navigation.navigate("main")
         }
     }

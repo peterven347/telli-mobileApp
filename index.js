@@ -19,15 +19,31 @@ onNotificationOpenedApp(messaging, async remoteMessage => {
 
 setBackgroundMessageHandler(messaging, async remoteMessage => {
 	const { setDomains } = useDomain.getState()
-	if(remoteMessage.data.domain) {
+	console.log(remoteMessage)
+	if (remoteMessage.data){
+		console.log(data)
+	}
+	if (remoteMessage.data.domain) {
 		const newDomain = JSON.parse(remoteMessage.data.domain)
 		setDomains(prev => [...prev, newDomain])
 	}
-	if(remoteMessage.notification) {
+	if (remoteMessage.data.sector) {
+		const newSector = JSON.parse(remoteMessage.data.domain)
+		setDomains(prev =>
+			prev.map(d => {
+				if (d._id !== newSector.domain_id) return d
+				return {
+					...d,
+					sectors: [{ ...newSector, data:[], time: Date.now() }, ...d.sectors]
+				}
+			})
+		)
+	}
+	if (remoteMessage.notification) {
 		PushNotification.localNotification({
-		  channelId: "tells",
-		  title: remoteMessage.notification.title,
-		  message: remoteMessage.notification.body,
+			channelId: "tells",
+			title: remoteMessage.notification.title,
+			message: remoteMessage.notification.body,
 		});
 	}
 });

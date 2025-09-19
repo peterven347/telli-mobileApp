@@ -2,17 +2,16 @@ import React, { useState, useMemo } from "react"
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import Fa5 from "react-native-vector-icons/FontAwesome5"
 import Mci from "react-native-vector-icons/MaterialCommunityIcons"
-import { useDelegateContact, useDomain, useToken } from "../../../../store/useStore"
-import country_dial_codes from "../../../../utils/country-dial-codes"
-import SectorData from "../../../components/SectorData"
-import Overlay from "../../../components/Overlay"
-import { refreshAccessToken } from '../../../../utils/refreshAccessToken'
-import { url } from "../../../../utils/https"
-import showSnackBar from "../../../../utils/SnackBar"
+import { useDelegateContact, useDomain, useToken } from "../../../../../store/useStore"
+import { country_dial_codes } from "../../../../../utils/country-dial-codes"
+import Overlay from "../../../../components/Overlay"
+import { refreshAccessToken, url } from "../../../../../utils/https"
+import showSnackBar from "../../../../../utils/snackBar"
 
-import { Divider, Portal } from "react-native-paper"
+import { Divider } from "react-native-paper"
 
-export default function EditsectorModal({ _id, title, editSectorModalVisible, setEditSectorModalVisible, navigation }) {
+export default function EditsectorModal({ navigation, route }) {
+    const { _id, title } = route.params
     const { accessToken } = useToken()
     const { contactList } = useDelegateContact()
     const { domains } = useDomain()
@@ -21,8 +20,7 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
     const [exitDialogVisible, setExitDialogVisible] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    let sector = domains?.find(i => i._id == _id)?.sectors?.find(j => j.title === title)
-    let currDomain = domains.find(i => i._id === _id)
+    let sector = domains?.find(i => i._id == _id)?.sectors?.find?.(j => j.title === title)
     const cleanPhoneNumber = (input) => {
         const number = input.trim();
         for (let i of country_dial_codes) {
@@ -38,7 +36,6 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
 
     const findContactByPhoneNumber = useMemo(() => {
         const cache = {}
-
         return async (number) => {
             const key = number.trim();
             if (cache[key]) return cache[key];
@@ -66,7 +63,6 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
                 }
             })
             const res = await httpCall.json()
-            console.log(res)
             if (res.exp) {
                 console.log("exp token")
                 let accessToken_ = await refreshAccessToken(url, accessToken)
@@ -99,7 +95,6 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
                 body: JSON.stringify({ delegate: 12345644949 })
             })
             const res = await httpCall.json()
-            console.log(res)
             if (res.exp) {
                 console.log("exp token")
                 let accessToken_ = await refreshAccessToken()
@@ -121,9 +116,7 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
     return (
         <Modal
             animationType="slide"
-            transparent={false}
-            visible={editSectorModalVisible}
-            onRequestClose={() => { setEditSectorModalVisible(false) }}
+            onRequestClose={() => { navigation.goBack() }}
         >
             {loading && <Overlay />}
             <Pressable style={styles.container} onPress={() => { setRemDialogVisible(false); setExitDialogVisible(false) }}>
@@ -144,9 +137,10 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
                 <Text style={{ fontWeight: "bold", fontSize: 16, color: "#444" }}>{title}</Text>
                 <Text>issues: {sector?.data.length}{"\n"}</Text>
                 <Divider style={{ marginHorizontal: -16, marginBottom: 4, backgroundColor: "#66f" }} />
-                {currDomain?.status === "private" &&
+                {sector?.status === "private" &&
                     <>
-                        <Pressable style={{ flexDirection: "row", height: 20, gap: 6, marginVertical: 10 }} onPress={() => { setEditSectorModalVisible(false); navigation.navigate("addSector", { comp: false, sectorName: title }) }}>
+                        <Pressable style={{ flexDirection: "row", height: 20, gap: 6, marginVertical: 10 }} onPress={() => { navigation.navigate("addContacts", { comp: false, sectorName: title }); setEditSectorModalVisible(false) }}>
+                            {/* <Pressable style={{ flexDirection: "row", height: 20, gap: 6, marginVertical: 10 }} onPress={() => { navigation.navigate("addSector", { comp: false, sectorName: title }); setEditSectorModalVisible(false) }}> */}
                             <Fa5 name="plus" color="#339" marginTop={3} />
                             <Text style={{ fontWeight: "bold", fontSize: 14, color: "#338" }}>add delegate</Text>
                         </Pressable>
@@ -155,7 +149,7 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
                 }
                 <ScrollView>
                     {
-                        sector?.delegates?.map(i =>
+                        sector?.delegates?.map(i => ////////////////
                             <TouchableOpacity activeOpacity={0.7} key={Object.values(i)[0]} style={styles.delegate} onLongPress={() => { setDelegate(Object.values(i)[0]); setRemDialogVisible(true) }}>
                                 <Text style={{ fontSize: 15 }}>{findContactByPhoneNumber(Object.values(i)[0])}</Text>
                             </TouchableOpacity>
@@ -163,8 +157,8 @@ export default function EditsectorModal({ _id, title, editSectorModalVisible, se
                     }
                     <Pressable style={{ flexDirection: "row", height: 20, gap: 6, marginTop: 40 }} onPress={() => setExitDialogVisible(true)}>
                         <Fa5 name="long-arrow-alt-left" color="#f00" marginTop={4} />
-                        <Text style={{ fontWeight: "bold", fontSize: 14, color: "#f44" }}>exit sector</Text>
-                        <Text style={{ fontWeight: "bold", fontSize: 14, color: "#f44" }}>{_id}</Text>
+                        <Text style={{ fontWeight: "bold", fontSize: 14, color: "" }}>exit</Text>
+                        <Text style={{ fontWeight: "bold", fontSize: 14, color: "" }}>{title}</Text>
                     </Pressable>
                 </ScrollView>
             </Pressable>

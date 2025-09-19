@@ -1,26 +1,80 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { ActivityIndicator, Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import Mci from "react-native-vector-icons/MaterialCommunityIcons"
+import { Animated, Easing, ActivityIndicator, Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Pressable } from 'react-native';
+import { RadioButton } from "react-native-paper";
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useDomain, useToken } from '../../../../store/useStore';
-import { refreshAccessToken } from '../../../../utils/refreshAccessToken';
-import { url } from '../../../../utils/https';
-import showSnackBar from '../../../../utils/SnackBar';
+import { refreshAccessToken, url } from '../../../../utils/https';
+import showSnackBar from '../../../../utils/snackBar';
+import SnackBarView from '../../../components/SnackBarView';
 
 
 export default function EditDomainModal({ _id, editDomainModalVisible, setEditDomainModalVisible }) {
-	const { domains } = useDomain()
+	const { domains, setDomains } = useDomain()
+	const { accessToken } = useToken()
 	let currDomain = domains?.find(i => i._id === _id)
 	const [name, setName] = useState(currDomain?.domain);
-	const [imageUri, setImageUri] = useState("");
+	const [image, setImage] = useState({});
 	const [loading, setLoading] = useState(false)
 	const [rLoading, setRLoading] = useState(false)
+	const [editPermission, setEditPermission] = useState("owner");
+	const [addSectorsPermission, setAddSectorsPermission] = useState("owner");
+	const loopRef = useRef(null)
+	const spinAnim = useRef(new Animated.Value(0)).current;
+	const spinInterpolate = spinAnim.interpolate({
+		inputRange: [0, 1],
+		outputRange: ['0deg', '360deg'],
+	});
+
+	const changeImage = async (i) => {
+		const formData = new FormData()
+		if (!i) {
+			return
+		}
+		formData.append("file", {
+			uri: i.uri,
+			type: i.type,
+			name: currDomain.domain + "-" + i.fileName
+		})
+		try {
+			const httpCall = await fetch(`${url}/domain/${_id}/logo`, {
+				headers: {
+					Authorization: "Bearer " + accessToken,
+				},
+				method: "PATCH",
+				body: formData
+			})
+			const res = await httpCall.json()
+			if (res.exp) {
+				let accessToken_ = await refreshAccessToken()
+				if (accessToken_) {
+					changeImage()
+				}
+			} else if (res.success === false) {
+				showSnackBar(res.message)
+			} else if (res.success === true) {
+				// setDomains(prev =>
+				// 	prev.map(d => {
+				// 		if (d._id !== _id) return d
+				// 		return {
+				// 			...d,
+				// 			logo: res.data
+				// 		};
+				// 	})
+				// );
+				showSnackBar("picture updated")
+			}
+		} catch (err) {
+			console.log(err)
+		}
+	}
 
 	const handleImagePick = () => {
 		launchImageLibrary({ mediaType: 'photo', quality: 0.5 }, (response) => { ////////////////////////////////////////
 			if (response.assets && response.assets.length > 0) {
-				console.log(response.assets[0].uri);
-				setImageUri(response.assets[0].uri);
+				setImage(response.assets[0]);
+				changeImage(response.assets[0])
 			}
 		})
 	}
@@ -30,7 +84,7 @@ export default function EditDomainModal({ _id, editDomainModalVisible, setEditDo
 		try {
 			let accessToken = useToken.getState().accessToken
 			const httpCall = await fetch(`${url}/reset-link/${currDomain._id}`, {
-				method: "PATCH", ////////////////////////////////
+				method: "PATCH",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: "Bearer " + accessToken
@@ -38,17 +92,12 @@ export default function EditDomainModal({ _id, editDomainModalVisible, setEditDo
 				},
 			})
 			const res = await httpCall.json()
-			console.log(res)
 			if (res.exp) {
-				console.log("exp token")
 				let accessToken_ = await refreshAccessToken(url, accessToken)
 				if (accessToken_) {
 					resetLink()
-				} else {
-					console.log("repeat")
 				}
 			} else if (res.success === true) {
-				setRLoading(false)
 				showSnackBar("Link has been reset")
 			}
 		} catch (err) {
@@ -59,83 +108,168 @@ export default function EditDomainModal({ _id, editDomainModalVisible, setEditDo
 	}
 
 	const saveChanges = async () => {
-		setLoading(true)
 		const formData = new FormData()
 		formData.append("name", name)
-		if (imageUri.uri) { /////////////////////////////////////////////////
+		if (image.uri) {
 			formData.append("file", {
-				uri: imageUri.uri,
-				type: imageUri.type,
-				name: domainName + "-" + imageUri.fileName
+				uri: image.uri,
+				type: image.type,
+				name: domainName + "-" + image.fileName
 			})
 		}
 		try {
 			let accessToken = useToken.getState().accessToken
-			const httpCall = await fetch(`${url}/edit-domain/${currDomainId}`, {
+			const httpCall = await fetch(`${url}/edit-domain/${_id}`, {
 				method: "POST",
 				headers: {
-					"Content-Type": "application/json",
 					Authorization: "Bearer " + accessToken
 				},
 				body: formData
 			})
 			const res = await httpCall.json()
-			console.log(res)
 			if (res.exp) {
-				console.log("exp token")
 				let accessToken_ = await refreshAccessToken()
 				if (accessToken_) {
 					saveChanges()
-				} else {
-					console.log("repeat")
 				}
 			} else if (res.success === true) {
 			}
 		} catch (err) {
 			showSnackBar("an error occured")
 		} finally {
-			setLoading(false)
-		} //${url}/img-file/domainImg/${i.logo}
+		}
 	}
+
+	const allowEdit = async (value) => {
+		setEditPermission(value)
+		try {
+			const httpCall = await fetch(`${url}/domain/${_id}/q?setting=allow-edit`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer " + accessToken
+				},
+				body: JSON.stringify({ holder: value })
+			})
+			const res = await httpCall.json()
+			if (res.exp) {
+				let accessToken_ = await refreshAccessToken()
+				if (accessToken_) {
+					saveChanges()
+				}
+			} else if (res.success === true) {
+			}
+		} catch (err) {
+			showSnackBar("an error occured")
+		} finally {
+		}
+	}
+
+	const allowAddSector = async (value) => {
+		setAddSectorsPermission(value)
+		try {
+			const httpCall = await fetch(`${url}/domain/${_id}/q?setting=allow-add-sector`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer " + accessToken
+				},
+				body: JSON.stringify({ holder: value })
+			})
+			const res = await httpCall.json()
+			if (res.exp) {
+				let accessToken_ = await refreshAccessToken()
+				if (accessToken_) {
+					saveChanges()
+				}
+			} else if (res.success === true) {
+			}
+		} catch (err) {
+			showSnackBar("an error occured")
+		} finally {
+		}
+	}
+
+	useEffect(() => {
+		if (rLoading) {
+			loopRef.current = Animated.loop(
+				Animated.timing(spinAnim, {
+					toValue: 1,
+					duration: 1500,
+					easing: Easing.linear,
+					useNativeDriver: true,
+				})
+			);
+			loopRef.current.start();
+		} else {
+			if (loopRef.current) {
+				loopRef.current.stop()
+				spinAnim.setValue(0)
+			}
+		}
+
+		return () => {
+			if (loopRef.current) loopRef.current.stop()
+		};
+	}, [rLoading]);
 
 	return (
 		<Modal
 			visible={editDomainModalVisible}
 			animationType="fade"
-			onRequestClose={() => {setEditDomainModalVisible(false); setName(""); setImageUri("")}}
+			onRequestClose={() => { setEditDomainModalVisible(false); setName(""); setImage({}) }}
 		>
-			<View style={styles.modalContainer}>
-				<Text style={styles.modalTitle}>{currDomain?.domain}</Text>
+			<ScrollView showsVerticalScrollIndicator={false} style={styles.modalContainer}>
+				<Text style={styles.modalText}>{currDomain?.domain}</Text>
 				<TouchableOpacity activeOpacity={0.7} style={styles.imgView} onPress={handleImagePick}>
-					<Image source={{ uri: imageUri ? imageUri : `${url}/img-file/domainImg/${currDomain?.logo}` }} style={styles.imagePreview} /> 
+					<Image source={{ uri: image.uri ? image.uri : `${url}/img-file/domainImg/${currDomain?.logo}` }} style={styles.imagePreview} />
 				</TouchableOpacity>
 
 				<View style={styles.copy}>
-					<Text style={{ color: "#66bd", marginStart: 15, fontWeight: 500 }}>rp://fghjlkjhgfdsdfghjkiuytrty</Text>
-					<Icon name="copy-outline" color="#ccc" size={20} onPress={() => { showSnackBar("link coied!") }} />
-				</View>
-				<TextInput
-					value={name}
-					defaultValue={currDomain?.domain}
-					onChangeText={setName}
-					placeholder="Enter new domain name"
-					placeholderTextColor="#ddd"
-					style={styles.input}
-				/>
-				{rLoading ? <ActivityIndicator marginBottom={24} marginTop={"10%"} /> :
-					<TouchableOpacity style={styles.resetView} onPress={() => resetLink()}>
-						<Text style={styles.resetText}>Reset Link</Text>
+					<TouchableOpacity style={{flexDirection: "row", columnGap: 6, marginBottom: 4}} onPress={() => {showSnackBar("link copied!")}}>
+						<Text style={{ color: "#66bd", fontWeight: 500 }}>rp://fghjlkjhgfdsdfghjkiuytrty</Text>
+						<Mci name="content-copy" color="#ccc" size={16} />
 					</TouchableOpacity>
-				}
+					{
+						rLoading ?
+							<Animated.View style={{ transform: [{ rotate: spinInterpolate }] }}>
+								<Mci name="autorenew" color="#ccc" size={24} />
+							</Animated.View>
+							:
+							<Mci name="refresh" color="#888" size={24} onPress={() => resetLink()} />
+					}
+				</View>
+
+				<View>
+					<Text style={{ fontSize: 15 }}>Who can edit domain?</Text>
+					<RadioButton.Group
+						onValueChange={value => allowEdit(value)}
+						value={editPermission}
+					>
+						<RadioButton.Item label="Owner" value="owner" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+						<RadioButton.Item label="Private members" value="admin" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+						<RadioButton.Item label="Everybody" value="everybody" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+					</RadioButton.Group>
+
+					<Text style={{ fontSize: 15, marginTop: 26 }}>Who can add sectors?</Text>
+					<RadioButton.Group
+						onValueChange={value => allowAddSector(value)}
+						value={addSectorsPermission}
+					>
+						<RadioButton.Item label="Owner" value="owner" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+						<RadioButton.Item label="Private members" value="admin" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+						<RadioButton.Item label="Everybody" value="everybody" labelStyle={{ fontSize: 14 }} style={{ paddingVertical: 1 }} />
+					</RadioButton.Group>
+				</View>
 
 				<View style={{ marginTop: "20%", rowGap: 18 }}>
-					<TouchableOpacity activeOpacity={0.8} style={[styles.btn, { backgroundColor: loading ? "#66b8" : "#66bd" }]} onPress={() => !loading && saveChanges()}>
-						{loading ? <ActivityIndicator /> : <Text style={{ color: "#fff" }}>Save Changes</Text>}
-					</TouchableOpacity>
 					<TouchableOpacity activeOpacity={0.8} style={[styles.btn, { backgroundColor: '#cccd' }]} onPress={() => { setEditDomainModalVisible(false) }}>
 						<Text style={{ color: "#222" }}>Cancel</Text>
 					</TouchableOpacity>
 				</View>
+			</ScrollView>
+			<View style={{ zIndex: 1, width: "70%", alignSelf: "center", }}>
+				<SnackBarView />
 			</View>
 		</Modal>
 	);
@@ -151,20 +285,20 @@ const styles = StyleSheet.create({
 		height: 50,
 	},
 	copy: {
-		marginTop: "20%",
-		marginEnd: 16,
-		flexDirection: "row",
-		justifyContent: "space-between",
+		marginVertical: "8%",
+		// marginEnd: 16,
+		// flexDirection: "row",
+		// justifyContent: "space-around",
 		alignItems: "center"
 	},
 	imagePreview: {
-		width: 150,
-		height: 150,
+		width: 110,
+		height: 110,
 		borderRadius: 75
 	},
 	imgView: {
-		width: 150,
-		height: 150,
+		width: 110,
+		height: 110,
 		borderRadius: "50%",
 		marginTop: 20,
 		backgroundColor: 'white',
@@ -191,7 +325,7 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		margin: 20,
 	},
-	modalTitle: {
+	modalText: {
 		fontSize: 14,
 		fontWeight: 600,
 		marginBottom: 10,

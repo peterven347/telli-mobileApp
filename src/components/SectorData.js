@@ -69,7 +69,7 @@ export default function SectorData({ private_, sectorName, setSectorName, delega
         }
         if (emailRegex.test(email)) {
             editEmail(id, email, false, "loading")
-            const verify = await fetch(`${url}/api/user/verify-email`, {
+            const httpCall = await fetch(`${url}/verify-email`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -79,8 +79,7 @@ export default function SectorData({ private_, sectorName, setSectorName, delega
                     email: email
                 })
             })
-            const res = await verify.json()
-            console.log(res)
+            const res = await httpCall.json()
             if (res.email) {
                 editEmail(id, res.email, true, res.message)
             }
@@ -213,6 +212,7 @@ export default function SectorData({ private_, sectorName, setSectorName, delega
             {
                 loading ? <ActivityIndicator marginTop={20} size={20} /> :
                 <Button
+                loading={loading}
                     mode='contained'
                     style={{ width: "auto", alignSelf: "center", marginTop: 8 }}
                     onPress={fn}

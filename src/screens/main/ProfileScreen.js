@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from "react"
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { TextInput } from "react-native-paper"
 import { useIsFocused } from "@react-navigation/native"
-import { useToken, useUser } from "../../../../store/useStore"
+import { useToken, useUser } from "../../../store/useStore"
 import Feather from "react-native-vector-icons/Feather"
 import Ion from "react-native-vector-icons/Ionicons"
 import Oct from "react-native-vector-icons/Octicons";
 
-import Settings from "./Settings"
+import Settings from "./profile/Settings"
 
 function About() {
     return (

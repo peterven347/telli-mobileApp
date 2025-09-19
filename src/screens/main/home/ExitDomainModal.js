@@ -2,9 +2,8 @@ import React, { useState } from "react"
 import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useDomain, useSnackBar, useToken } from "../../../../store/useStore"
 import Overlay from "../../../components/Overlay"
-import { refreshAccessToken } from '../../../../utils/refreshAccessToken'
-import { url } from "../../../../utils/https"
-import showSnackBar from "../../../../utils/SnackBar"
+import { refreshAccessToken, url } from "../../../../utils/https"
+import showSnackBar from "../../../../utils/snackBar"
 
 export default function ExitDomainModal({ _id, domain, exitDomainModalVisible, setExitDomainModalVisible }) {
     const { domains, setCurrDomainId, setDomains } = useDomain()
@@ -22,7 +21,6 @@ export default function ExitDomainModal({ _id, domain, exitDomainModalVisible, s
                 method: "PATCH",
             })
             const res = await httpCall.json()
-            console.log(res)
             if (res.exp) {
                 console.log("exp token")
                 let accessToken_ = await refreshAccessToken()
