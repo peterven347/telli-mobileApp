@@ -6,7 +6,8 @@ import { BackHandler, Image, Keyboard, Pressable, StyleSheet, Text, TouchableOpa
 import { RadioButton, TextInput } from 'react-native-paper';
 import { Easing } from 'react-native-reanimated';
 import { useDelegateContact, useDomain, useDomainImg, useToken, useUser } from "../../../../../store/useStore";
-import { refreshAccessToken, url } from "../../../../../utils/https"
+import { refreshAccessToken } from "../../../../../apis/chat.api"
+import { url } from '../../../../../apis/socket';
 import showSnackBar from '../../../../../utils/snackBar';
 import BottomSheetForImg from '../BottomSheetForImg';
 import SectorData from '../../../../components/SectorData';
@@ -16,7 +17,7 @@ const emailRegex = /^(?=.{1,256}$)(?=.{1,64}@.{1,255}$)(?=[^@]+@[^@]+\.[a-zA-Z]{
 export default function AddDomain({ navigation }) {
     const bottomSheetRef = useRef(null);
     const indexRef = useRef(null)
-    const { domains, setDomains, setCurrDomainId } = useDomain()
+    const { setDomains, setCurrDomainId } = useDomain()
     const { imageUri, setImageUri } = useDomainImg()
     const { accessToken } = useToken()
     const { user } = useUser()
@@ -45,7 +46,7 @@ export default function AddDomain({ navigation }) {
 
     const createDomain = async () => {
         Keyboard.dismiss()
-        if (!domainName || ! sectorName) {
+        if (!domainName || !sectorName) {
             showSnackBar("Incomplete Data")
             return
         }
@@ -63,7 +64,7 @@ export default function AddDomain({ navigation }) {
                 name: domainName + "-" + imageUri.fileName
             })
         }
-        const httpCall = await fetch(`${url}/domain`, {
+        const httpCall = await fetch(`${url}/chat/domain`, {
             headers: {
                 Authorization: "Bearer " + accessToken,
             },
@@ -87,7 +88,7 @@ export default function AddDomain({ navigation }) {
             setImageUri("")
             navigation.navigate("main")
         }
-    }
+    };
 
     const handleSheetChanges = useCallback((index) => {
         indexRef.current = index;

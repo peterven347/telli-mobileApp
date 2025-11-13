@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useDomain, useSnackBar, useToken } from "../../../../store/useStore"
 import Overlay from "../../../components/Overlay"
-import { refreshAccessToken, url } from "../../../../utils/https"
+import { refreshAccessToken, url } from "../../../../apis/chat.api"
 import showSnackBar from "../../../../utils/snackBar"
 
 export default function ExitDomainModal({ _id, domain, exitDomainModalVisible, setExitDomainModalVisible }) {

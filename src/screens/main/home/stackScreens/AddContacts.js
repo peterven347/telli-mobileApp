@@ -2,7 +2,8 @@ import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Dimensions, FlatList, Linking, PermissionsAndroid, Platform, Pressable, StyleSheet, Text, TouchableOpacity, ScrollView, View, } from 'react-native';
 import { Avatar, Searchbar } from 'react-native-paper';
 import { useChatBoxSectorId, useDelegateContact, useDomain, useToken } from '../../../../../store/useStore';
-import { refreshAccessToken, url } from '../../../../../utils/https';
+import { refreshAccessToken } from '../../../../../apis/chat.api';
+import { url } from '../../../../../apis/socket';
 import { country_dial_codes } from '../../../../../utils/country-dial-codes';
 import getContacts from '../../../../../utils/getContacts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,7 +20,7 @@ const selectContact = async (item, selected, setSelected, scrollRef) => {
     } else {
         setSelected(prev => prev.filter(i => i.recordID !== item.recordID))
     }
-}
+};
 
 const cleanPhoneNumber = (input) => {
     const number = input.trim();
@@ -38,6 +39,7 @@ const RenderItem = memo((
     {
         navigation,
         item,
+        cacheContact,
         scrollRef,
         isChat,
         sectorsInContacts,
@@ -49,12 +51,14 @@ const RenderItem = memo((
     }) => {
     const isSelected = useMemo(() => selected.some(i => i.recordID === item.recordID), [selected, item.recordID]);
 
-    //create chat as sector with phone number
     const createChat = async (phoneNumber) => {
         const number = await cleanPhoneNumber(phoneNumber)
         const title = await findContactByPhoneNumber(number)
-        setChatBoxSectorId(number)
-        if (sectorsInContacts.includes(number)) {
+        const { accessToken } = useToken.getState()
+        const contact = cacheContact.find(i => cleanPhoneNumber(i.number) == number)
+
+        setChatBoxSectorId(contact._id)
+        if (sectorsInContacts.includes(contact._id)) {
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'main', params: { openChatBox: true } }],
@@ -64,7 +68,7 @@ const RenderItem = memo((
                 prev.map(d =>
                     d._id === "ccccccc" ? {
                         ...d,
-                        sectors: [...d.sectors, { _id: number, domain_id: "ccccccc", title: title, status: "private", data: [], time: Date.now() }]
+                        sectors: [...d.sectors, { _id: contact?._id, domain_id: "ccccccc", title: title, status: "private", logo: contact?.logo, data: [] }]
                     }
                         : d
                 ));
@@ -73,13 +77,53 @@ const RenderItem = memo((
                 routes: [{ name: 'main', params: { openChatBox: true } }],
             });
         }
-    }
 
+        // try {
+        //     const httpCall = await fetch(`${url}/user/profile-img`, {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //             Authorization: "Bearer " + accessToken,
+        //         },
+        //         body: JSON.stringify({
+        //             phoneNumber: number
+        //         })
+        //     })
+        //     const res = await httpCall.json()
+        //     if (res.exp) {
+        //         let accessToken_ = await refreshAccessToken(url, accessToken)
+        //         if (accessToken_) {
+        //             createChat(phoneNumber)
+        //         }
+        //     } else if (res.success === true) {
+        //         setDomains(prev =>
+        //             prev.map(d =>
+        //                 d._id === "ccccccc" ? {
+        //                     ...d,
+        //                     sectors: d.sectors.map(s => {
+        //                         if (s._id !== number) return s;
+        //                         return {
+        //                             ...s,
+        //                             logo: res.data.logo ?? ""
+        //                         };
+        //                     }),
+        //                 } : d
+        //             ));
+        //     }
+        // } catch (err) {
+        //     console.log(err)
+        // }
+    }
     return (
         <View>
             {item.phoneNumbers.map(i =>
                 <TouchableOpacity activeOpacity={0.5} onPress={() => { isChat ? createChat(i) : selectContact(item, selected, setSelected, scrollRef) }} key={item.recordID} style={styles.contact}>
-                    <Avatar.Text size={38} color={isSelected ? "#4CAF50" : ""} label={item.displayName.slice(0, 1).toUpperCase()} />
+                    {
+                        cacheContact.find(j => j.number == i)?.logo ?
+                            <Avatar.Image size={42} source={{ uri: `${url}/files/domainLogo/${cacheContact.find(j => j.number == i).logo}` }} />
+                            : <Avatar.Text size={42} color={isSelected ? "#4CAF50" : ""} label={item.displayName.slice(0, 1).toUpperCase()} />
+
+                    }
                     <View>
                         <Text style={{ color: isSelected ? "#81C784" : "" }}>{item.displayName}</Text>
                         <Text style={{ color: isSelected ? "#81C784" : "" }}>{i}</Text>
@@ -142,14 +186,14 @@ export default function AddContacts({ navigation, route }) {
         const prevRaw = await AsyncStorage.getItem("valid-contact");
         setLoading(true)
         try {
-            const httpCall = await fetch(`${url}/verify-number`, {
+            const httpCall = await fetch(`${url}/user/verify-numbers`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: "Bearer " + accessToken,
                 },
                 body: JSON.stringify({
-                    phoneNumber: [...new Set(contactList.map(i => i.phoneNumbers).flat())]
+                    phoneNumbers: [...new Set(contactList.map(i => i.phoneNumbers).flat())]
                 })
             })
             const res = await httpCall.json()
@@ -163,7 +207,7 @@ export default function AddContacts({ navigation, route }) {
                 }
             } else if (res.success === true) {
                 const prev = prevRaw ? JSON.parse(prevRaw) : [];
-                const merged = [...new Set([...prev, ...res.valid])];
+                const merged = [...new Set([...prev, ...res.data])];
                 setCacheContact(merged)
                 // setCacheContact([...new Set(contactList.map(i => i.phoneNumbers).flat())])
                 const jsonValue = JSON.stringify(merged);
@@ -172,7 +216,7 @@ export default function AddContacts({ navigation, route }) {
                 setCompleted(true)
             }
         } catch (err) {
-            console.log(err, "verify number")
+            console.log(err)
         } finally {
             setLoading(false)
         }
@@ -199,16 +243,33 @@ export default function AddContacts({ navigation, route }) {
                     getContacts()
                 }
             }
+            // verifyNumber() ////////////////////
             if (contactHash !== "" && contactHash !== savedContactHash) {
                 verifyNumber()
             } else {
-                console.log(2, "contact")
                 setCompleted(true)
             }
         } catch (err) {
             console.log(err)
         }
     }
+
+
+    const findContactByPhoneNumber = useMemo(() => {
+        const cache = {}
+        return async (number) => {
+            const key = number.trim();
+            if (cache[key]) return cache[key];
+            const match = contactList.find(contact =>
+                contact.phoneNumbers?.some(i =>
+                    cleanPhoneNumber(i) == number
+                )
+            )
+            const result = match ? match.displayName : number
+            cache[key] = result
+            return result
+        }
+    }, [contactList])
 
     //checks for user leaving the app to grant permission on mount
     useEffect(() => {
@@ -229,23 +290,6 @@ export default function AddContacts({ navigation, route }) {
             subscription.remove();
         };
     }, []);
-
-
-    const findContactByPhoneNumber = useMemo(() => {
-        const cache = {}
-        return async (number) => {
-            const key = number.trim();
-            if (cache[key]) return cache[key];
-            const match = contactList.find(contact =>
-                contact.phoneNumbers?.some(i =>
-                    cleanPhoneNumber(i) == number
-                )
-            )
-            const result = match ? match.displayName : number
-            cache[key] = result
-            return result
-        }
-    }, [contactList])
 
     function ListEmptyComponentx() {
         return (
@@ -272,13 +316,13 @@ export default function AddContacts({ navigation, route }) {
             />
             <ListHeaderComponentx selected={selected} setSelected={setSelected} scrollRef={scrollRef} />
             <FlatList
-                removeClippedSubviews={false}// remove
-                extraData={cacheContact}
+                // removeClippedSubviews={false}// remove
+                // extraData={cacheContact}
                 data={
                     matchCheck == "" ?
-                        contactList.filter(i => i.phoneNumbers.some(i => cacheContact?.includes(i))).sort((a, b) => a.displayName.localeCompare(b.name))
+                        contactList.filter(i => i.phoneNumbers.some(j => cacheContact?.some(k => k.number === j))).sort((a, b) => a.displayName.localeCompare(b.displayName))
                         :
-                        contactList.filter(i => i.phoneNumbers.some(i => cacheContact?.includes(i))).sort((a, b) => a.displayName.localeCompare(b.name))
+                        contactList.filter(i => i.phoneNumbers.some(j => cacheContact?.includes(j))).sort((a, b) => a.displayName.localeCompare(b.displayName))
                             .filter(i => i.displayName?.toUpperCase().substr(i.displayName.toUpperCase()
                                 .indexOf(matchCheck), matchCheck.length) == matchCheck)
                 }
@@ -287,6 +331,7 @@ export default function AddContacts({ navigation, route }) {
                 renderItem={({ item }) => <RenderItem
                     navigation={navigation}
                     item={item}
+                    cacheContact={cacheContact}
                     scrollRef={scrollRef}
                     isChat={isChat}
                     sectorsInContacts={sectorsInContacts}
@@ -318,7 +363,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingStart: 12,
         marginBottom: 8,
-        columnGap: 14,
+        columnGap: 8,
     },
     doneBtn: {
         width: 60,

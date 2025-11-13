@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Linking, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { ActivityIndicator, Button, TextInput } from "react-native-paper";
 import { useDelegateContact, useToken, useUser } from "../../store/useStore";
-import { url } from "../../utils/https";
+import { url } from "../../apis/socket";
 import Mci from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const emailRegex = /^(?=.{1,256}$)(?=.{1,64}@.{1,255}$)(?=[^@]+@[^@]+\.[a-zA-Z]{2,63}$)^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
@@ -69,7 +69,7 @@ export default function SectorData({ private_, sectorName, setSectorName, delega
         }
         if (emailRegex.test(email)) {
             editEmail(id, email, false, "loading")
-            const httpCall = await fetch(`${url}/verify-email`, {
+            const httpCall = await fetch(`${url}/user/verify-email`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

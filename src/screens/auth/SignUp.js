@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { TextInput } from "react-native-paper"
-import { url } from "../../../utils/https"
+import { url } from "../../../apis/socket"
 
 export default function SignUp({navigation}) {
     const [message, setMessage] = useState(" ")
@@ -9,9 +9,9 @@ export default function SignUp({navigation}) {
 
     const [firstName, setFirstName] = useState("")
     const [lastName, setLasttName] = useState("")
-    const [email, setEmail] = useState("")
+    const [email, setEmail] = useState("petervenwest1@gmail.com")
+    const [password, setPassword] = useState("123456")
     const [phoneNum, setPhoneNum] = useState("")
-    const [password, setPassword] = useState("")
     const passwordRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
     const signup = async () => {
@@ -100,7 +100,7 @@ export default function SignUp({navigation}) {
             />
             <View style={styles.login}>
                 <Text>Already have an account?  </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <TouchableOpacity onPress={() => navigation.navigate("login")}>
                     <Text style={styles.loginText}>Sign In  </Text>
                 </TouchableOpacity>
             </View>

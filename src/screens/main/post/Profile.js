@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react"
 import { Dimensions, Image, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native"
 import Mci from "react-native-vector-icons/MaterialCommunityIcons"
 import { TabBar, TabView } from "react-native-tab-view";
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+// import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
-const Tab = createMaterialTopTabNavigator();
+// const Tab = createMaterialTopTabNavigator();
 
 const A = () => {
     return (
@@ -35,35 +35,35 @@ const renderTabBar = props => (
     />
 );
 
-// function Tab() {
-//     const layout = useWindowDimensions();
-//     const [index, setIndex] = useState(0);
-//     const routes = [
-//         { key: "second", title: "Posts" },
-//         { key: "first", title: "Highligh" },
-//     ];
+function Tab() {
+    const layout = useWindowDimensions();
+    const [index, setIndex] = useState(0);
+    const routes = [
+        { key: "second", title: "Posts" },
+        { key: "first", title: "Highligh" },
+    ];
 
-//     const renderScene = ({ route }) => {
-//         switch (route.key) {
-//             case "first":
-//                 return <A />;
-//             case "second":
-//                 return <B />;
-//             default:
-//                 return null;
-//         }
-//     };
+    const renderScene = ({ route }) => {
+        switch (route.key) {
+            case "first":
+                return <A />;
+            case "second":
+                return <B />;
+            default:
+                return null;
+        }
+    };
 
-//     return (
-//         <TabView
-//             navigationState={{ index, routes }}
-//             onIndexChange={setIndex}
-//             renderScene={renderScene}
-//             renderTabBar={(props) => renderTabBar({ ...props, layout: layout })}
-//             initialLayout={{ width: layout.width }}
-//         />
-//     );
-// }
+    return (
+        <TabView
+            navigationState={{ index, routes }}
+            onIndexChange={setIndex}
+            renderScene={renderScene}
+            renderTabBar={(props) => renderTabBar({ ...props, layout: layout })}
+            initialLayout={{ width: layout.width }}
+        />
+    );
+}
 
 
 export default function Profile({ navigation, route }) {
@@ -102,8 +102,8 @@ export default function Profile({ navigation, route }) {
                     <View style={styles.actions}></View>
                 </View>
             </View>
-            {/* <Tab /> */}
-            <Tab.Navigator
+            <Tab />
+            {/* <Tab.Navigator
                 screenOptions={{
                     tabBarActiveTintColor: '#000',
                     tabBarInactiveTintColor: '#888',
@@ -118,7 +118,7 @@ export default function Profile({ navigation, route }) {
             >
                 <Tab.Screen name="Post" component={A} />
                 <Tab.Screen name="Highlights" component={B} />
-            </Tab.Navigator>
+            </Tab.Navigator> */}
         </>
     )
 }

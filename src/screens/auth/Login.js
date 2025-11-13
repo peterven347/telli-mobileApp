@@ -5,9 +5,8 @@ import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { TextInput } from "react-native-paper"
-import { initSocket, url } from "../../../utils/https"
+import { initSocket, url } from "../../../apis/socket";
 import { useUser, useToken, useDomain } from "../../../store/useStore";
-
 
 export default function Login({ navigation }) {
     const messaging = getMessaging(getApp())
@@ -15,7 +14,7 @@ export default function Login({ navigation }) {
     const { setDomains } = useDomain()
     const { setAccessToken } = useToken()
     const [message, setMessage] = useState(" ")
-    const [email, setMail] = useState("petervenwest1@gmail.com")
+    const [email, setEmail] = useState("petervenwest1@gmail.com")
     const [password, setPassword] = useState("12345")
     const [passwordVisible, setPasswordVisible] = useState(false)
     const [btnActive, setBtnActive] = useState(true)
@@ -40,11 +39,11 @@ export default function Login({ navigation }) {
 
     const login = async () => {
         setMessage("")
-        setBtnActive(false)
+        // setBtnActive(false)
         try {
             // const fcmToken = await getToken(messaging)
             // console.log(fcmToken)
-            const val = await fetch(`${url}/login`, {
+            const val = await fetch(`${url}/user/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -89,7 +88,7 @@ export default function Login({ navigation }) {
                 label="e-mail"
                 textContentType="emailAddress"
                 value={email}
-                onChangeText={setMail}
+                onChangeText={setEmail}
                 textColor= {btnActive ? "#222" : "#aaa"}
                 style={styles.textInput}
             />
@@ -115,7 +114,7 @@ export default function Login({ navigation }) {
             </TouchableOpacity>
             <View style={styles.login}>
                 <Text>Don't have an account?  </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+                <TouchableOpacity onPress={() => navigation.navigate("signUp")}>
                     <Text style={styles.loginText}>Sign Up </Text>
                 </TouchableOpacity>
             </View>
@@ -125,7 +124,8 @@ export default function Login({ navigation }) {
             {message ?
                 <Text style={styles.message}>
                     {message}
-                </Text> :
+                </Text>
+                :
                 <ActivityIndicator color="#66b" />
             }
         </View>

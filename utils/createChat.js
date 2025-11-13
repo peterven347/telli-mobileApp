@@ -4,6 +4,11 @@ import { useDelegateContact, useDomain, } from "../store/useStore"
 const { setDomains } = useDomain.getState()
 const { contactList } = useDelegateContact.getState(state => state.contactList)
 
+function midnightTimestamp() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+}
+
 const cleanPhoneNumber = (input) => {
     const number = input.trim();
     for (let i of country_dial_codes) {
@@ -38,7 +43,13 @@ export const createChat = async (phoneNumber, data) => {
         prev.map(d =>
             d._id === "ccccccc" ? {
                 ...d,
-                sectors: [...d.sectors, { _id: number, domain_id: "ccccccc", title: title, status: "private", data: [{...data, time: Date.now()}], time: Date.now() }]
+                sectors: [...d.sectors, {
+                    _id: data.sector_id, domain_id: "ccccccc", title: title, status: "private",
+                    data: [
+                        { ...data, time: Date.now() },
+                        { _id: Date.now().toString(), creator_id: "user", note: new Date(Date.now()).toLocaleDateString(), createdAt: midnightTimestamp() }
+                    ], time: Date.now()
+                }]
             }
                 : d
         ));

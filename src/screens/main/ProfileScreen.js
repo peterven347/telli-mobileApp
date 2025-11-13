@@ -21,7 +21,7 @@ export default function ProfileScreen() {
     const { setAccessToken } = useToken()
     const [firstName, setFirstName] = useState(user?.first_name)
     const [lastName, setLasttName] = useState(user?.last_name)
-    const [email, setEmail] = useState(user?.email)
+    const [email, setEmail] = useState(user?.email + user?._id)
     const [phoneNum, setPhoneNum] = useState(user?.phone_number)
     const [password, setPassword] = useState("")
     const [newPassword, setNewPassword] = useState("")

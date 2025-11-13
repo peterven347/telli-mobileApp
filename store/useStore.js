@@ -40,13 +40,26 @@ export const useDomain = create((set) => (
 			set((state) => ({
 				domains: typeof updater === 'function' ? updater(state.domains) : updater
 			})),
-		setCurrDomainId: (state) => set({ currDomainId: state }),
-		setFetchedSectorIds: (updater) =>
-			set((state) => ({
-				fetchedSectorIds: typeof updater === 'function' ? updater(state.fetchedSectorIds) : updater
-			}))
+			setCurrDomainId: (state) => set({ currDomainId: state }),
+			setFetchedSectorIds: (updater) =>
+				set((state) => ({
+					fetchedSectorIds: typeof updater === 'function' ? updater(state.fetchedSectorIds) : updater
+				})),
 	}
 ))
+
+export const useLastMessageId = create(
+	persist(
+		(set) => ({
+			lastSectorMessageId: "",
+			setLastSectorMessageId: (state) => set({ lastSectorMessageId: state })
+		}),
+		{
+			name: "lastMessageId",
+			storage: createJSONStorage(() => keychainStorage)
+		}
+	)
+)
 
 export const useChatBoxSectorId = create((set) => ({
 	chatBoxSectorId: "",

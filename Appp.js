@@ -2,7 +2,7 @@
 // import { SafeAreaView } from 'react-native';
 // import SplashScreen from 'react-native-splash-screen'
 
-// import ImageGallery from './ImageGallery';
+import ImageGallery from './ImageGallery';
 
 // const App = () => {
 

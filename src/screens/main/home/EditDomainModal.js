@@ -5,7 +5,7 @@ import { Animated, Easing, ActivityIndicator, Modal, View, Text, TextInput, Touc
 import { RadioButton } from "react-native-paper";
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useDomain, useToken } from '../../../../store/useStore';
-import { refreshAccessToken, url } from '../../../../utils/https';
+import { refreshAccessToken, url } from '../../../../apis/chat.api';
 import showSnackBar from '../../../../utils/snackBar';
 import SnackBarView from '../../../components/SnackBarView';
 

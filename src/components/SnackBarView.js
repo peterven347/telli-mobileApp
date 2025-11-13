@@ -24,17 +24,21 @@ export default function SnackBarView() {
     return (
         snackBar.visible &&
         <Animated.View style={[styles.snackBar, { transform: [{ translateY }] }]}>
-            <Text style={{ textAlign: "center", color: "#111", fontWeight: "bold" }}>{snackBar.text}</Text>
+            <Text style={{ textAlign: "center", color: "#fee", fontWeight: "bold" }}>{snackBar.text}</Text>
         </Animated.View>
     )
 }
 
 const styles = StyleSheet.create({
     snackBar: {
-        width: "100%",
+        width: "55%",
         alignItems: "center",
         justifyContent: "center",
+        alignSelf: "center",
         position: "absolute",
-        bottom: 60,
+        bottom: 100,
+        backgroundColor: "#66b",
+        padding: 12,
+        borderRadius: 20
     }
 })

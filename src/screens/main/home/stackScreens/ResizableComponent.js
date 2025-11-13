@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import { Dimensions, I18nManager, Keyboard, RefreshControl, Text, ScrollView, StyleSheet, View, Pressable, TouchableOpacity } from "react-native"
+import { Dimensions, FlatList, I18nManager, Keyboard, RefreshControl, Text, ScrollView, StyleSheet, View, Pressable, TouchableOpacity } from "react-native"
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Avatar, Portal, Searchbar, Tooltip } from "react-native-paper";
 import { useDomain, useToken } from "../../../../../store/useStore";
-import { initSocket, url } from "../../../../../utils/https";
+import { initSocket } from "../../../../../apis/chat.api";
+import { url } from "../../../../../apis/socket";
 import Mci from "react-native-vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import showSnackBar from "../../../../../utils/snackBar";
@@ -163,104 +164,104 @@ export default function ResizableComponent({ navigation }) {
     }, [searchQuery])
 
     return (
-            <Animated.View style={[styles.resizableView, resizableStyle]}>
-                <Searchbar
-                    ref={textBar}
-                    placeholder="Search"
-                    onChangeText={(e) => { setSearchQuery(e) }}
-                    value={searchQuery}
-                    onIconPress={() => {
-                        componentWidth.value == initialWidth && (componentWidth.value = withSpring(width - 60, { damping: 110, overshootClamping: true }));
-                        setNumberOfLines(4);
-                        textBar.current.focus()
-                    }}
-                    clearIcon={clearIcon ? null : () => null}
-                    inputStyle={styles.searchBarInputStyle}
-                    style={styles.searchBarStyle}
-                />
+        <Animated.View style={[styles.resizableView, resizableStyle]}>
+            <Searchbar
+                ref={textBar}
+                placeholder="Search"
+                onChangeText={(e) => { setSearchQuery(e) }}
+                value={searchQuery}
+                onIconPress={() => {
+                    componentWidth.value == initialWidth && (componentWidth.value = withSpring(width - 60, { damping: 110, overshootClamping: true }));
+                    setNumberOfLines(4);
+                    textBar.current.focus()
+                }}
+                clearIcon={clearIcon ? null : () => null}
+                inputStyle={styles.searchBarInputStyle}
+                style={styles.searchBarStyle}
+            />
 
-                <View style={{ marginBottom: 8 }}>
-                    <Mci name="plus" color="#fff" size={36} onPress={() => navigation.navigate("addDomain")} />
-                </View>
+            <View style={{ marginBottom: 8 }}>
+                <Mci name="plus" color="#fff" size={36} onPress={() => navigation.navigate("addDomain")} />
+            </View>
 
-                <ScrollView
-                    keyboardShouldPersistTaps="always"
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.domainView}>
-                    {
-                        dd?.length >= 1 && dd.sort((a, b) => {
-                            const query = searchQuery?.trim().toLowerCase();
-                            if (query) {
-                                const aVal = a.domain.toLowerCase();
-                                const bVal = b.domain.toLowerCase();
-                                const aIndex = aVal.indexOf(query);
-                                const bIndex = bVal.indexOf(query);
-                                if (aIndex === -1 && bIndex === -1) return 0;
-                                if (aIndex === -1) return 1;
-                                if (bIndex === -1) return -1;
-                                return aIndex - bIndex;
-                            }
-                            const isPinnedA = a.pinned === true;
-                            const isPinnedB = b.pinned === true;
-                            if (isPinnedA && !isPinnedB) return -1;
-                            if (!isPinnedA && isPinnedB) return 1;
-                            return new Date(b.time || b.updatedAt) - new Date(a.time || a.updatedAt);
-                        }).concat([{ id: 1 }, { id: 2 }, { id: 3 }])?.map((i, index) => {
-                            return (
-                                <Animated.View key={i._id || i.id} style={[{ alignItems: "center", maxWidth: 46 }, avatarStyle]}>
-                                    {i.pinned && <Mci name="pin" color="#fffe" size={16} style={{ zIndex: 2, position: "absolute", top: 2, left: 38 }} />}
-                                    {i._id ?
-                                        <Tooltip title={
-                                            i.domain
-                                            // `${i.sectors?.length}sectors ${i.sectors?.reduce?.((acc, i) => {
-                                            //     return (acc + i.data?.length)
-                                            // }, 0)}issues`
-                                        }>
-                                            <Avatar.Image
-                                                source={{ uri: `${url}/img-file/domainImg/${i.logo}`, headers: { Authorization: "Bearer " + accessToken } }}
-                                                size={46} label={index}
-                                                onPress={() => {
-                                                    if (currDomainId !== i._id) { //prevents unnecessary rerendering
-                                                        setCurrDomainId(i._id); saveCurrDomain(i._id); dismissKeyboard();
-                                                        componentWidth.value !== initialWidth && (componentWidth.value = initialWidth); setSearchQuery("")
-                                                    } else {
-                                                        dismissKeyboard(); componentWidth.value !== initialWidth && (componentWidth.value = initialWidth); setSearchQuery("")
-                                                    }
-                                                }}
-                                            />
-                                        </Tooltip>
-                                        : <View style={{ width: 46 }} />
-                                    }
-                                    <Text numberOfLines={numberOfLines} ellipsizeMode="tail" style={{ fontSize: 10, fontWeight: 600, textAlign: "center", color: "#fff" }}>{i.domain?.replaceAll(" ", "\n")}</Text>
-                                    <Avatar.Text label="" size={4} backgroundColor={i._id && i._id == currDomainId && "#fff"} style={styles.currDomainIndicator} />
-                                </Animated.View>
-                            );
-                        })
-                    }
-
-                    <View style={[styles.domainView, searchRes.length > 3 && styles.searchRes]}>
-                        {searchRes.concat([{ id: 11 }, { id: 22 }, { id: 33 }]).map((i) => (
-                            <TouchableOpacity key={i._id || i.id} style={{ alignItems: "center", maxWidth: 46 }} onPress={() => { joinSector(i) }}>
+            <ScrollView
+                keyboardShouldPersistTaps="always"
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.domainView}>
+                {
+                    dd?.length >= 1 && dd.sort((a, b) => {
+                        const query = searchQuery?.trim().toLowerCase();
+                        if (query) {
+                            const aVal = a.domain.toLowerCase();
+                            const bVal = b.domain.toLowerCase();
+                            const aIndex = aVal.indexOf(query);
+                            const bIndex = bVal.indexOf(query);
+                            if (aIndex === -1 && bIndex === -1) return 0;
+                            if (aIndex === -1) return 1;
+                            if (bIndex === -1) return -1;
+                            return aIndex - bIndex;
+                        }
+                        const isPinnedA = a.pinned === true;
+                        const isPinnedB = b.pinned === true;
+                        if (isPinnedA && !isPinnedB) return -1;
+                        if (!isPinnedA && isPinnedB) return 1;
+                        return new Date(b.time || b.updatedAt) - new Date(a.time || a.updatedAt);
+                    }).concat([{ id: 1 }, { id: 2 }, { id: 3 }])?.map((i, index) => {
+                        return (
+                            <Animated.View key={i._id || i.id} style={[{ alignItems: "center", maxWidth: 46 }, avatarStyle]}>
+                                {i.pinned && <Mci name="pin" color="#fffe" size={16} style={{ zIndex: 2, position: "absolute", top: 2, left: 38 }} />}
                                 {i._id ?
-                                    <Avatar.Image
-                                        source={{ uri: `${url}/img-file/domainImg/${i.logo}`, headers: { Authorization: "Bearer " + accessToken } }}
-                                        size={46}
-                                    />
+                                    <Tooltip title={
+                                        i.domain
+                                        // `${i.sectors?.length}sectors ${i.sectors?.reduce?.((acc, i) => {
+                                        //     return (acc + i.data?.length)
+                                        // }, 0)}issues`
+                                    }>
+                                        <Avatar.Image
+                                            source={{ uri: `${url}/files/domainLogo/${i.logo}`, headers: { Authorization: "Bearer " + accessToken } }}
+                                            size={46} label={index}
+                                            onPress={() => {
+                                                if (currDomainId !== i._id) { //prevents unnecessary rerendering
+                                                    setCurrDomainId(i._id); saveCurrDomain(i._id); dismissKeyboard();
+                                                    componentWidth.value !== initialWidth && (componentWidth.value = initialWidth); setSearchQuery("")
+                                                } else {
+                                                    dismissKeyboard(); componentWidth.value !== initialWidth && (componentWidth.value = initialWidth); setSearchQuery("")
+                                                }
+                                            }}
+                                        />
+                                    </Tooltip>
                                     : <View style={{ width: 46 }} />
                                 }
-                                <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 10, fontWeight: 600, textAlign: "center", color: "#fff" }}>{i.title?.replaceAll(" ", "\n")}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
+                                <Text numberOfLines={numberOfLines} ellipsizeMode="tail" style={{ fontSize: 10, fontWeight: 600, textAlign: "center", color: "#fff" }}>{i.domain?.replaceAll(" ", "\n")}</Text>
+                                <Avatar.Text label="" size={4} backgroundColor={i?._id === currDomainId ? "#fff" : null} style={styles.currDomainIndicator} />
+                            </Animated.View>
+                        );
+                    })
+                }
 
-                <GestureDetector gesture={panGesture}>
-                    <View style={[styles.edge]}>
-                        <Mci name="drag-vertical-variant" size={30} color="#fff" />
-                    </View>
-                </GestureDetector>
-            </Animated.View>
+                <View style={[styles.domainView, searchRes.length > 3 && styles.searchRes]}>
+                    {searchRes.concat([{ id: 11 }, { id: 22 }, { id: 33 }]).map((i) => (
+                        <TouchableOpacity key={i._id || i.id} style={{ alignItems: "center", maxWidth: 46 }} onPress={() => { joinSector(i) }}>
+                            {i._id ?
+                                <Avatar.Image
+                                    source={{ uri: `${url}/files/domainLogo/${i.logo}`, headers: { Authorization: "Bearer " + accessToken } }}
+                                    size={46}
+                                />
+                                : <View style={{ width: 46 }} />
+                            }
+                            <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 10, fontWeight: 600, textAlign: "center", color: "#fff" }}>{i.title?.replaceAll(" ", "\n")}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </ScrollView>
+
+            <GestureDetector gesture={panGesture}>
+                <View style={[styles.edge]}>
+                    <Mci name="drag-vertical-variant" size={30} color="#fff" />
+                </View>
+            </GestureDetector>
+        </Animated.View>
     )
 }
 
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
         position: "absolute",
         left: 0,
         top: 0,
-        zIndex: 2,
+        zIndex: 3,
         alignItems: "center",
     },
     searchBarInputStyle: {

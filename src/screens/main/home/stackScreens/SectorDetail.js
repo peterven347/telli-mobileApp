@@ -5,7 +5,7 @@ import Mci from "react-native-vector-icons/MaterialCommunityIcons"
 import { useDelegateContact, useDomain, useToken } from "../../../../../store/useStore"
 import { country_dial_codes } from "../../../../../utils/country-dial-codes"
 import Overlay from "../../../../components/Overlay"
-import { refreshAccessToken, url } from "../../../../../utils/https"
+import { refreshAccessToken, url } from "../../../../../apis/chat.api"
 import showSnackBar from "../../../../../utils/snackBar"
 
 import { Divider } from "react-native-paper"

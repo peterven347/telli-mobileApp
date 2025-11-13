@@ -1,44 +1,43 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Image, Keyboard, Pressable, StatusBar, StyleSheet, View } from 'react-native';
-import { Button, TextInput } from 'react-native-paper';
+import { FlatList, Image, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
-import { createIssue } from '../../../../utils/https';
+import { Button, TextInput } from 'react-native-paper';
 import Ant from "react-native-vector-icons/AntDesign";
 import Mci from "react-native-vector-icons/MaterialCommunityIcons";
 import Oct from "react-native-vector-icons/Octicons";
 import Sli from "react-native-vector-icons/SimpleLineIcons";
+import { useCreatePost } from "../../../../apis/post.api";
 import showSnackBar from '../../../../utils/snackBar';
-import SnackBarView from '../../../components/SnackBarView';
 
 export default function TextBoard({ _id, navigation }) {
+    const { mutate, isLoading, isSuccess, isError } = useCreatePost();
     const [imageData, setImageData] = useState([])
     const [textInput, setTextInput] = useState("")
-    const [loading, setLoading] = useState(false)
     const inputRef = useRef(null);
 
-    const cc = async () => {
-        try {
-            if (!textInput.trim() && imageData.length === 0) {
-                console.log(textInput.trim())
-                showSnackBar("add note")
-                return
-            }
-            if (!loading) {
-                setLoading(true)
-                createIssue(textInput, imageData, _id)
-                setTextInput("");
-                setImageData([]);
-            }
-        } catch (err) {
-            console.log(err)
-        } finally {
-            setLoading(false);
+
+    const cc = () => {
+        if (!textInput.trim() && imageData.length === 0) return;
+
+        if (!isLoading) {
+            Keyboard.dismiss();
+            mutate(
+                { text: textInput, images: imageData },
+                {
+                    onSuccess: () => {
+                        navigation.goBack();
+                        showSnackBar('Post uploaded');
+                    },
+                    onError: () => {
+                        showSnackBar('An error occurred');
+                    },
+                }
+            );
         }
-    }
+    };
 
     const openCamera = () => {
         if (imageData.length >= 4) {
-            // setSnackBarVisible(true)
             showSnackBar("Allows max. 4 pictures")
             return
         }
@@ -57,7 +56,6 @@ export default function TextBoard({ _id, navigation }) {
 
     const openGallery = () => {
         if (imageData.length >= 4) {
-            // setSnackBarVisible(true)
             showSnackBar("Allows max. 4 pictures")
             return
         }
@@ -80,7 +78,7 @@ export default function TextBoard({ _id, navigation }) {
                 }))))
             }
         })
-        Keyboard.isVisible() && Keyboard.dismiss()
+        Keyboard.dismiss()
     };
 
     useEffect(() => {
@@ -88,17 +86,17 @@ export default function TextBoard({ _id, navigation }) {
             inputRef.current?.focus();
         }, 100);
     }, [])
+
     return (
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
-            <StatusBar backgroundColor={"#fff"} animated />
             <View style={styles.header}>
                 <Pressable hitSlop={4} onPress={() => { navigation.goBack() }} >
                     <Mci name="window-close" size={26} color="#888" />
                 </Pressable>
                 <Button
                     icon={() => <Oct name="check" size={24} color="#444" />}
-                    mode="contained" loading={loading}
-                    style={{ paddingStart: 20, backgroundColor: loading ? "#66d4" : "#66dc" }}
+                    mode="contained" loading={isLoading}
+                    style={{ paddingStart: 20, backgroundColor: isLoading ? "#66d4" : "#66dc" }}
                     onPress={cc}
                 />
             </View>
@@ -117,7 +115,6 @@ export default function TextBoard({ _id, navigation }) {
             </View>
             <View style={styles.imgContainer}>
                 <FlatList
-                    removeClippedSubviews={false}
                     horizontal
                     keyboardShouldPersistTaps="always"
                     showsHorizontalScrollIndicator={false}
@@ -136,9 +133,6 @@ export default function TextBoard({ _id, navigation }) {
                     <Sli name="camera" size={28} onPress={openCamera} />
                     <Ant name="picture" size={28} color="#333" onPress={openGallery} />
                 </View>
-            </View>
-            <View style={{ zIndex: 1, width: "70%", alignSelf: "center", }}>
-                <SnackBarView />
             </View>
         </View>
     );

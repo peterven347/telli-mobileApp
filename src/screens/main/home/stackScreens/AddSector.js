@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { View } from "react-native"
 import { RadioButton } from "react-native-paper"
 import { useDelegateContact, useDomain, useToken, useUser } from "../../../../../store/useStore"
-import { refreshAccessToken, url } from "../../../../../utils/https"
+import { refreshAccessToken, url } from "../../../../../apis/chat.api"
 import showSnackBar from "../../../../../utils/snackBar";
 import SectorData from '../../../../components/SectorData';
 

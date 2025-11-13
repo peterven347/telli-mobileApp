@@ -4,18 +4,6 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
-
-        <!-- these 3 removes the status bar alongside  SplashScreen.show(this, true); in MainActivity.kt -->
-        <!-- <item name="android:windowExitAnimation">@android:anim/fade_out</item> -->
-        <item name="android:windowFullscreen">true</item>
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-    
-    <style name="AppTheme.Launcher" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Set the background for the splash screen to use your custom drawable -->
-        <item name="android:windowBackground">@layout/launch_screen</item>
     </style>
 
 </resources>
-    
