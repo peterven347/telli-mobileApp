@@ -26,7 +26,7 @@ import ChatScreen from "./src/screens/main/ChatScreen"
 import GameScreen from "./src/screens/main/GameScreen"
 import ProfileScreen from "./src/screens/main/ProfileScreen"
 import Post from "./src/screens/main/PostScreen"
-import TvScreen from "./src/screens/main/TvScreen"
+import Aa from "./src/screens/main/Aa"
 
 I18nManager.allowRTL(true)
 const Stack = createNativeStackNavigator()
@@ -213,9 +213,9 @@ function AppContent() {
 									),
 								})}
 							>
-								<Tab.Screen name="tv" component={TvScreen} />
-								<Tab.Screen name="chat" component={ChatScreen} />
 								<Tab.Screen name="post" component={Post} />
+								<Tab.Screen name="a" component={Aa} />
+								<Tab.Screen name="chat" component={ChatScreen} />
 								<Tab.Screen name="game" component={GameScreen} />
 								<Tab.Screen name="profile" component={ProfileScreen} />
 							</Tab.Navigator>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Button, Text, StyleSheet, Alert, Platform, PermissionsAndroid } from 'react-native';
 import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, mediaDevices, RTCView, MediaStream } from 'react-native-webrtc';
 import SplashScreen from 'react-native-splash-screen'
-import { initSocket, socketEmit } from "../../../../../apis/socket"
+import { initSocket, socketEmit } from "./apis/socket"
 
 const configuration = {
     iceServers: [

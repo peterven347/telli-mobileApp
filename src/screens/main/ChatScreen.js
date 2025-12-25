@@ -9,14 +9,14 @@ import { refreshAccessToken, sendPendingIssue, emitMessage } from "../../../apis
 import { initSocket, socketEmit, url } from "../../../apis/socket"
 import { isSameDay } from "../../../utils/isSameDay"
 import { createChat } from "../../../utils/createChat"
-import AddContacts from "./home/stackScreens/AddContacts"
-import AddDomain from "./home/stackScreens/AddDomain"
-import AddSector from "./home/stackScreens/AddSector"
-import SectorDetail from "./home/stackScreens/SectorDetail"
-import ChatBox from "./home/ChatBox"
-import ResizableComponent from "./home/stackScreens/ResizableComponent"
-import SideComponent from "./home/stackScreens/SideComponent"
-import PeerVideoCall from "./home/PeerVideoCall"
+import AddContacts from "./chat/stackScreens/AddContacts"
+import AddDomain from "./chat/stackScreens/AddDomain"
+import AddSector from "./chat/stackScreens/AddSector"
+import SectorDetail from "./chat/stackScreens/SectorDetail"
+import ChatBox from "./chat/ChatBox"
+import ResizableComponent from "./chat/stackScreens/ResizableComponent"
+import SideComponent from "./chat/stackScreens/SideComponent"
+import PeerVideoCall from "./chat/PeerVideoCall"
 const Stack = createNativeStackNavigator()
 
 const configuration = {

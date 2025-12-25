@@ -1,84 +1,50 @@
 import React, { useEffect } from 'react';
-import { View, FlatList, Text, Image, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, FlatList, Text, Image, StyleSheet, TouchableOpacity, TextInput, Pressable } from 'react-native';
 import Ion from 'react-native-vector-icons/Ionicons';
+import { Avatar } from 'react-native-paper';
 
-const ChannelCard = ({ channel }) => {
+const ChannelCard = ({ channel, navigation }) => {
     return (
-        <View style={styles.ChannelCard}>
-            <Image source={{ uri: "https://img-s-msn-com.akamaized.net/tenant/amp/entityid/BB1msFQx?w=0&h=0&q=60&m=6&f=jpg&u=t" }} style={{ width: 80, height: 80, borderRadius: 8 }} />
-            <View style={{ flex: 1, marginLeft: 10, justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{channel.name}</Text>
-                <Text style={{ fontSize: 12, color: '#666' }}>{channel.genre}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 12, color: channel.isLive ? 'green' : 'red' }}>
-                        {channel.isLive ? 'LIVE' : 'OFFLINE'}
-                    </Text>
-                    <TouchableOpacity>
-                        <Ion
-                            name={channel.isFavorite ? 'heart' : 'heart-outline'}
-                            size={20}
-                            color={channel.isFavorite ? 'red' : '#666'}
-                        />
-                    </TouchableOpacity>
+        <Pressable style={styles.ChannelCard} onPress={() => { navigation.navigate("tvScreen", channel) }}>
+            <Image source={{ uri: "https://img-s-msn-com.akamaized.net/tenant/amp/entityid/BB1msFQx?w=0&h=0&q=60&m=6&f=jpg&u=t" }} style={{ width: 60, height: 60, borderRadius: 8 }} />
+            <View style={{ flex: 1, height: 60, marginLeft: 10,  backgroundColor: "", justifyContent: "center" }}>
+                <Text style={{ fontSize: 16, fontWeight: '600' }}>{channel.name}</Text>
+                <View style={{ flexDirection: 'row', backgroundColor: "" }}>
+                    {channel.isLive && <Avatar.Text label="" size={4} backgroundColor={"#0f0"} style={{ marginTop: 5, marginEnd: 4 }} />}
+                    <Text style={{ fontSize: 12, color: '#666' }}>{channel.description}</Text>
                 </View>
             </View>
-        </View>
+        </Pressable>
     );
 }
 
 const data = [
     {
-        id: "101",
+        _id: "101",
         name: "Discovery Channel",
         thumbnail: "https://cdn.example.com/thumbnails/discovery.jpg",
-        genre: "Documentary",
-        isLive: true,
-        isFavorite: false,
-        language: "English",
-        country: "US",
         description: "Explore the wonders of science, nature, and technology with Discovery Channel.",
         streamUrl: "https://stream.example.com/discovery.m3u8",
-        schedule: [
-            { time: "2025-11-09T10:00:00Z", show: "MythBusters" },
-            { time: "2025-11-09T11:00:00Z", show: "Planet Earth" }
-        ]
+        isLive: true
     },
     {
-        id: "102",
+        _id: "102",
         name: "HBO",
         thumbnail: "https://cdn.example.com/thumbnails/hbo.jpg",
-        genre: "Entertainment",
-        isLive: true,
-        isFavorite: true,
-        language: "English",
-        country: "US",
         description: "HBO brings you award-winning series, movies, and exclusive content.",
         streamUrl: "https://stream.example.com/hbo.m3u8",
-        schedule: [
-            { time: "2025-11-09T09:30:00Z", show: "Game of Thrones" },
-            { time: "2025-11-09T10:30:00Z", show: "Succession" }
-        ]
     },
     {
-        id: "103",
+        _id: "103",
         name: "CNN",
         thumbnail: "https://cdn.example.com/thumbnails/cnn.jpg",
-        genre: "News",
-        isLive: false,
-        isFavorite: false,
-        language: "English",
-        country: "US",
         description: "Stay updated with the latest world and local news from CNN.",
         streamUrl: "https://stream.example.com/cnn.m3u8",
-        schedule: [
-            { time: "2025-11-09T09:00:00Z", show: "Morning News" },
-            { time: "2025-11-09T10:00:00Z", show: "World Report" }
-        ]
     }
 ]
 
 
-export default function Shorts() {
+export default function Channels({ navigation }) {
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
             <View style={styles.searchAndBack}>
@@ -94,8 +60,8 @@ export default function Shorts() {
             </View>
             <FlatList
                 data={data}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => <ChannelCard channel={item} />}
+                keyExtractor={(item) => item._id.toString()}
+                renderItem={({ item }) => <ChannelCard channel={item} navigation={navigation} />}
                 contentContainerStyle={{ paddingBottom: 20 }}
             />
         </View>
@@ -113,7 +79,8 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 5,
-        elevation: 2
+        elevation: 2,
+        alignItems: "center"
     },
     search: {
         flexDirection: 'row',

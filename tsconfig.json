@@ -1,5 +1,5 @@
 {
   "extends": "@react-native/typescript-config",
-  "include": ["**/*.ts", "**/*.tsx", "src/screens/main/TvScreen.js"],
+  "include": ["**/*.ts", "**/*.tsx", "src/screens/main/post/TvScreen.js", "src/screens/main/Aa.js"],
   "exclude": ["**/node_modules", "**/Pods"]
 }

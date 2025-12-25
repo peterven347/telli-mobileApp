@@ -1,4 +1,4 @@
-export const url = "http://10.119.44.133:3030" //3030
+export const url = "http://10.174.244.133:3030"
 import { io } from "socket.io-client"
 import { useToken } from "../store/useStore"
 

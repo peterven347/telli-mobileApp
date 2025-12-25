@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+</head>
+
+<body>
+	<button id="startBtn">Start Broadcast</button>
+	<button id="stopBtn">Stop Broadcast</button>
+	<video id="localVideo" autoplay playsinline muted
+		style="width: 480px; height: 360px; border: 1px solid black;"></video>
+
+	<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+	<script>
+		const socket = io('http://10.144.110.133:3030');
+		let mediaRecorder;
+		let localStream;
+
+		const startBtn = document.getElementById('startBtn');
+		const stopBtn = document.getElementById('stopBtn');
+		const localVideo = document.getElementById('localVideo');
+
+		startBtn.onclick = async () => {
+			localStream = await navigator.mediaDevices.getUserMedia({
+				video: { width: 1280, height: 720, frameRate: 30 },
+				audio: true
+			});
+			localVideo.srcObject = localStream;
+
+			socket.emit('start-stream');
+
+			mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm; codecs=vp8,opus' });
+
+			mediaRecorder.ondataavailable = (event) => {
+				if (event.data && event.data.size > 0) {
+					event.data.arrayBuffer().then(buf => {
+						socket.emit('video-chunk', buf);
+					});
+				}
+			};
+
+			mediaRecorder.start(500); // send chunks every 500ms
+		};
+
+		stopBtn.onclick = () => {
+			if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+			if (localStream) localStream.getTracks().forEach(t => t.stop());
+			socket.emit('stop-stream');
+			localStream = null;
+		};
+	</script>
+</body>
+
+</html>
